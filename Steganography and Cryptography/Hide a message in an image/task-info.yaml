@@ -250,6 +250,12 @@ files:
 - name: test/testimage.png
   visible: false
   learner_created: false
+- name: test/out.png
+  visible: true
+  learner_created: true
 feedback_link: https://hyperskill.org/projects/160/stages/832/implement#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: Tue, 20 Apr 2021 01:15:23 UTC
 record: -1

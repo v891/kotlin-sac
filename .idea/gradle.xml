@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="delegatedBuild" value="false" />
+        <option name="testRunner" value="GRADLE" />
         <option name="distributionType" value="WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/Problems/Even numbers" />
+            <option value="$PROJECT_DIR$/Problems/Indexes" />
+            <option value="$PROJECT_DIR$/Problems/Number of occurrences" />
             <option value="$PROJECT_DIR$/Steganography and Cryptography/task" />
             <option value="$PROJECT_DIR$/util" />
           </set>

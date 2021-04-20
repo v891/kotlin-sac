@@ -4,17 +4,17 @@ import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
+import java.util.*
 import javax.imageio.ImageIO
+
 
 fun main() {
     println("Task (hide, show, exit):")
-    val readLine = readLine()!!
 
-    when (readLine) {
-        "hide" -> {
-            hideDriver()
-        }
-        "show" -> println("Obtaining message from image.")
+    when (readLine()!!) {
+        "hide" -> hideDriver()
+        "show" -> showDriver()
         "exit" -> {
             println("Bye!")
             return
@@ -22,29 +22,142 @@ fun main() {
         else -> println("Wrong task: task")
     }
 
-//    main()
+// main()
+}
+
+fun showDriver() {
+    println("Input image file:")
+
+    try {
+        val inputFileName = readLine()!!
+        val bufferedImage = ImageIO.read(File(inputFileName)) ?: throw FileNotFoundException("")
+//        val bufferedImage = ImageIO.read(File("/Users/tvxv3/Downloads/images/bout.png"))
+                ?: throw FileNotFoundException("")
+
+        println("Message:")
+        println(showMessage(bufferedImage))
+    } catch (e: IOException) {
+        println("Can't read input file!")
+    }
+    main()
 }
 
 fun hideDriver() {
     println("Input image file:")
     try {
         val inputFileName = readLine()!!
-        val bufferedImage = ImageIO.read(File(inputFileName)) ?: throw FileNotFoundException("")
-
-        val out = hide(bufferedImage)
+        val bufferedImage = ImageIO.read(File(inputFileName))
+//        val bufferedImage = ImageIO.read(File("/Users/tvxv3/Downloads/images/blue.png"))
+                ?: throw FileNotFoundException("")
 
         println("Output image file:")
         val outputFileName = readLine()!!
+
+// println("Input Image: $inputFileName")
+// println("Output Image: $outputFileName")
+
+        println("Message to hide:")
+        val message: MutableList<Byte> = readLine()!!.encodeToByteArray().toMutableList()
+        val map = message.map {
+            Integer.toBinaryString(it.toInt()).padStart(8, '0')
+        }.map { it ->
+            it.toCharArray().map {
+                Character.getNumericValue(it)
+            }
+        }.flatten()
+
+        (map as MutableList).addAll(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1))
+
+
+
+        if (map.size > bufferedImage.width * bufferedImage.height) {
+            throw RuntimeException("The input image is not large enough to hold this message.")
+        }
+
+        val out = hideMessage(bufferedImage, map)
+
+//        ImageIO.write(out, "png", File("/Users/tvxv3/Downloads/images/bout.png"))
         ImageIO.write(out, "png", File(outputFileName))
+        println("Message saved in $outputFileName image.")
 
-        println("Input Image: $inputFileName")
-        println("Output Image: $outputFileName")
-        println("Image $outputFileName is saved.")
-
-    } catch (e: Exception) {
+    } catch (e: RuntimeException) {
+        println(e.message)
+    } catch (e: IOException) {
         println("Can't read input file!")
     }
     main()
+}
+
+fun hideMessage(inputImage: BufferedImage, message: List<Int>): BufferedImage {
+    var arrIndex = 0
+    for (j in 0 until inputImage.height) {
+        for (i in 0 until inputImage.width) {
+            val color = Color(inputImage.getRGB(i, j))
+
+            if (arrIndex >= message.size) {
+                break
+            }
+            val rgb = Color(
+                    color.red,
+                    color.green,
+                    modifyBit(color.blue, message[arrIndex++])
+            ).rgb
+
+            inputImage.setRGB(i, j, rgb)
+        }
+    }
+    return inputImage
+}
+
+fun showMessage(inputImage: BufferedImage): String {
+    val endList = listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1)
+    val checker = mutableListOf<Int>()
+
+    val out: MutableList<Int> = mutableListOf<Int>()
+
+    outer@ for (j in 0 until inputImage.height) {
+        for (i in 0 until inputImage.width) {
+            val color = Color(inputImage.getRGB(i, j))
+            val element = color.blue % 2
+
+            if (checker.size == 24) {
+                Collections.rotate(checker, -1)
+                checker[23] = element
+            } else {
+                checker.add(element)
+            }
+
+            if (checker == endList) {
+                break@outer
+            }
+            out.add(element)
+        }
+    }
+    val collect = collect(out.subList(0, out.size - 23))
+    return collect.toString(Charsets.UTF_8)
+}
+
+fun collect(list: MutableList<Int>): ByteArray/*: List<MutableList<Int>>*/ {
+
+
+    val pageSize = 8
+
+    val map: List<Int> = (0 until ((list.size + pageSize - 1) / pageSize))
+            .map { i: Int ->
+                list.subList(
+                        i * pageSize,
+                        Math.min(pageSize * (i + 1), list.size)
+                )
+            }.map {
+                it.joinToString("").toInt(2)
+            }
+
+    val array = ByteArray(map.size)
+    for (i in map.indices) {
+        array[i] = map[i].toByte()
+    }
+
+    return array
 }
 
 fun hide(inputImage: BufferedImage): BufferedImage {
@@ -54,9 +167,9 @@ fun hide(inputImage: BufferedImage): BufferedImage {
             val color = Color(inputImage.getRGB(i, j))
 
             val rgb = Color(
-                changeLeastToOne(color.red),
-                changeLeastToOne(color.green),
-                changeLeastToOne(color.blue)
+                    changeLeastToOne(color.red),
+                    changeLeastToOne(color.green),
+                    changeLeastToOne(color.blue)
             ).rgb
 
             inputImage.setRGB(i, j, rgb)
@@ -69,3 +182,8 @@ fun changeLeastToOne(input: Int): Int {
     return if (input % 2 == 0) input + 1 else input
 }
 
+
+fun modifyBit(n: Int, b: Int): Int {
+    val mask = 1 shl 0
+    return n and mask.inv() or (b shl 0 and mask)
+}
