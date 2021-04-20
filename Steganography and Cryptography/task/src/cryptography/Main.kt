@@ -8,7 +8,6 @@ import java.io.IOException
 import java.util.*
 import javax.imageio.ImageIO
 
-
 fun main() {
     println("Task (hide, show, exit):")
 
@@ -21,8 +20,6 @@ fun main() {
         }
         else -> println("Wrong task: task")
     }
-
-// main()
 }
 
 fun showDriver() {
@@ -31,11 +28,10 @@ fun showDriver() {
     try {
         val inputFileName = readLine()!!
         val bufferedImage = ImageIO.read(File(inputFileName)) ?: throw FileNotFoundException("")
-//        val bufferedImage = ImageIO.read(File("/Users/tvxv3/Downloads/images/bout.png"))
                 ?: throw FileNotFoundException("")
 
-        println("Message:")
         println(showMessage(bufferedImage))
+        println("Message:")
     } catch (e: IOException) {
         println("Can't read input file!")
     }
@@ -47,28 +43,15 @@ fun hideDriver() {
     try {
         val inputFileName = readLine()!!
         val bufferedImage = ImageIO.read(File(inputFileName))
-//        val bufferedImage = ImageIO.read(File("/Users/tvxv3/Downloads/images/blue.png"))
                 ?: throw FileNotFoundException("")
 
         println("Output image file:")
         val outputFileName = readLine()!!
 
-// println("Input Image: $inputFileName")
-// println("Output Image: $outputFileName")
-
         println("Message to hide:")
-        val message: MutableList<Byte> = readLine()!!.encodeToByteArray().toMutableList()
-        val map = message.map {
-            Integer.toBinaryString(it.toInt()).padStart(8, '0')
-        }.map { it ->
-            it.toCharArray().map {
-                Character.getNumericValue(it)
-            }
-        }.flatten()
+        val map = message()
 
         (map as MutableList).addAll(listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1))
-
-
 
         if (map.size > bufferedImage.width * bufferedImage.height) {
             throw RuntimeException("The input image is not large enough to hold this message.")
@@ -76,7 +59,6 @@ fun hideDriver() {
 
         val out = hideMessage(bufferedImage, map)
 
-//        ImageIO.write(out, "png", File("/Users/tvxv3/Downloads/images/bout.png"))
         ImageIO.write(out, "png", File(outputFileName))
         println("Message saved in $outputFileName image.")
 
@@ -86,6 +68,40 @@ fun hideDriver() {
         println("Can't read input file!")
     }
     main()
+}
+
+private fun message(): List<Int> {
+    val message = readLine()!!
+    val messageBitList: MutableList<Byte> = message.encodeToByteArray().toMutableList()
+    val map = toBits(messageBitList)
+
+    val passwordBits = passwordBits(message.length)
+
+    return xored(map, passwordBits)
+}
+
+private fun passwordBits(messageLength: Int): List<Int> {
+    println("Password:")
+    val password = readLine()!!
+    val toMutableList =
+            password.repeat(messageLength / password.length + 1).substring(0, messageLength).encodeToByteArray()
+                    .toMutableList()
+
+    return toBits(toMutableList)
+}
+
+private fun xored(map: List<Int>, passwordBits: List<Int>) =
+        map.mapIndexed { index, _ -> map[index] xor passwordBits[index] }
+
+private fun toBits(message: MutableList<Byte>): List<Int> {
+    val map = message.map {
+        Integer.toBinaryString(it.toInt()).padStart(8, '0')
+    }.map { it ->
+        it.toCharArray().map {
+            Character.getNumericValue(it)
+        }
+    }.flatten()
+    return map
 }
 
 fun hideMessage(inputImage: BufferedImage, message: List<Int>): BufferedImage {
@@ -133,12 +149,14 @@ fun showMessage(inputImage: BufferedImage): String {
             out.add(element)
         }
     }
-    val collect = collect(out.subList(0, out.size - 23))
+    val list = out.subList(0, out.size - 23)
+
+    val passwordBits = passwordBits(list.size)
+    val collect = collect(xored(list, passwordBits).toMutableList())
     return collect.toString(Charsets.UTF_8)
 }
 
 fun collect(list: MutableList<Int>): ByteArray/*: List<MutableList<Int>>*/ {
-
 
     val pageSize = 8
 
@@ -181,7 +199,6 @@ fun hide(inputImage: BufferedImage): BufferedImage {
 fun changeLeastToOne(input: Int): Int {
     return if (input % 2 == 0) input + 1 else input
 }
-
 
 fun modifyBit(n: Int, b: Int): Int {
     val mask = 1 shl 0
